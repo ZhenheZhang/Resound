@@ -492,8 +492,10 @@ def build_radar_chart(our_data: dict, output_path: Path):
     ]
 
     N = len(panel_keys)
-    # Clockwise from top: theta = pi/2, pi/2 - 2pi/5, pi/2 - 4pi/5, ...
-    angles = [(np.pi / 2 - i * 2 * np.pi / N) % (2 * np.pi) for i in range(N)]
+    # With set_theta_zero_location("N") + set_theta_direction(-1), matplotlib's
+    # coordinate system already places 0 at top and increases clockwise.
+    # Use that system directly: 0, 2π/N, 4π/N, ... for clockwise spokes.
+    angles = [i * 2 * np.pi / N for i in range(N)]
     angles_closed = angles + [angles[0]]
 
     def avg_norm(model_key, pk):
@@ -515,7 +517,7 @@ def build_radar_chart(our_data: dict, output_path: Path):
         return "N/A" if v is None else f"{v:.1f}"
 
     # ---- figure setup -------------------------------------------------------
-    fig, ax = plt.subplots(figsize=(9, 8), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(11, 8), subplot_kw=dict(polar=True))
     fig.patch.set_facecolor("#FFFFFF")
     ax.set_facecolor("#F8F8F8")
     ax.set_theta_zero_location("N")   # 0 deg at top
@@ -529,7 +531,7 @@ def build_radar_chart(our_data: dict, output_path: Path):
     ax.grid(color="#DDDDDD", linewidth=0.7, linestyle="-", alpha=0.8)
     ax.spines["polar"].set_visible(False)
 
-    ax.set_xticks([np.pi / 2 - i * 2 * np.pi / N for i in range(N)])
+    ax.set_xticks([i * 2 * np.pi / N for i in range(N)])
     ax.set_xticklabels(spoke_labels, fontsize=10, fontweight="bold", color="#333333")
     ax.tick_params(axis="x", pad=13)
 
@@ -578,14 +580,15 @@ def build_radar_chart(our_data: dict, output_path: Path):
                    label=(f"{m}  (Ours)" if m == OUR_MODEL else m))
         for m in all_models
     ]
-    ax.legend(handles=handles,
-              loc="lower left", bbox_to_anchor=(-0.22, -0.13),
-              fontsize=9, framealpha=0.95, edgecolor="#CCCCCC",
-              title="Models", title_fontsize=9)
+    fig.legend(handles=handles,
+               loc="center right",
+               bbox_to_anchor=(1.0, 0.5),
+               fontsize=9, framealpha=0.95, edgecolor="#CCCCCC",
+               title="Models", title_fontsize=9)
 
     # ---- title & footer -----------------------------------------------------
     ax.set_title(
-        "WavBench Overview Results\n"
+        "WavBench Overview Results *mimic\n"
         "Panel averages across 5 evaluation dimensions",
         fontsize=12, fontweight="bold", pad=20, color="#111111",
     )
@@ -596,7 +599,7 @@ def build_radar_chart(our_data: dict, output_path: Path):
         ha="center", fontsize=7, color="#AAAAAA",
     )
 
-    plt.tight_layout(rect=[0, 0.04, 1, 0.98])
+    plt.tight_layout(rect=[0, 0.04, 0.72, 0.98])
     plt.savefig(output_path, dpi=180, bbox_inches="tight",
                 facecolor=fig.get_facecolor())
     plt.close()
